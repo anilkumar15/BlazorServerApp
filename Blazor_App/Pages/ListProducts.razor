@@ -1,0 +1,94 @@
+﻿@page "/listproducts"
+@inject NavigationManager uriHelper;
+@using Blazor_App.Models
+@using Blazor_App.Services
+@using System.Reflection
+@using Microsoft.EntityFrameworkCore
+@inject IService<Product, int> productService
+
+<div class="container">
+   
+    <NavLink href="/createproduct" @onclick="@createnew">Create New</NavLink>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                @foreach (var header in headers)
+                {
+                    <th>@header</th>
+                }
+                <th></th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var prd in Products)
+            {
+                <tr>
+                    @foreach (var header in headers)
+                    {
+                        <td>@prd.GetType().GetProperty(header).GetValue(prd, null)</td>
+
+                    }
+                    <td>
+                        <input type="button" value="Edit" class="btn btn-warning"
+                               @onclick="((evt)=>navigateToEdit(prd.ProductRowId))" />
+                    </td>
+                    <td>
+                        <input type="button" value="Delete" class="btn btn-danger"
+                               @onclick="((evt)=>delete(prd.ProductRowId))" />
+                    </td>
+                </tr>
+
+            }
+        </tbody>
+    </table>
+</div>
+@code {
+    private Product product = new Product();
+    private List<string> headers = new List<string>();
+    private List<Product> Products = new List<Product>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        PropertyInfo[] properties = product.GetType().GetProperties(System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+        foreach (var property in properties)
+        {
+            headers.Add(property.Name);
+        }
+
+        Products = await productService.GetAsync();
+    }
+
+    @*async void loadData()
+    {
+        Products = await productService.GetAsync();
+    }*@
+
+void navigateToEdit(int id)
+{
+    uriHelper.NavigateTo("/editproduct/" + id);
+}
+
+async void delete(int id)
+{
+    var res = await productService.DeleteAsync(id);
+    if (res)
+    {
+        Products =  await productService.GetAsync();
+    }
+}
+
+void createnew()
+{
+    uriHelper.NavigateTo("/createproduct");
+}
+
+// implement this to make sure that the component re-renders 
+protected  override bool ShouldRender()
+{
+     
+    return base.ShouldRender();
+}
+
+}
